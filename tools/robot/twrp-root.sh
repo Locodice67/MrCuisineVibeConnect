@@ -24,7 +24,7 @@ mkdir -p $T/magisk/apk && cd $T/magisk || die "cannot create $T/magisk"
 # busybox unzip on TWRP can print "invalid zip magic" and exit non-zero after a
 # successful extraction: trust the files, not the exit code.
 unzip -o -q $T/magisk.apk -d apk || true
-[ -f apk/assets/boot_patch.sh ] || die "cannot unzip magisk.apk"
+[ -f apk/assets/boot_patch.sh ] || die "not a Magisk APK (no assets/boot_patch.sh after unzip)"
 for f in boot_patch.sh util_functions.sh stub.apk; do
   cp apk/assets/$f . || die "$f missing: is this a Magisk APK?"
 done
