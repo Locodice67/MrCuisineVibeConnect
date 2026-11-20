@@ -35,6 +35,21 @@ object ZoneLookup {
 
     fun isZoneId(text: String?): Boolean = text != null && ID.matches(text)
 
+    /**
+     * 1er janvier 2020 : en dessous, le robot n'a pas encore l'heure (pas de pile d'horloge).
+     * Interroger les services en HTTPS avant NTP ferait échouer la validation TLS.
+     */
+    const val PLAUSIBLE_SINCE_MS = 1_577_836_800_000L
+
+    fun clockPlausible(nowMs: Long): Boolean = nowMs >= PLAUSIBLE_SINCE_MS
+
+    /** Délai avant de retenter la recherche du fuseau : 10 s, 30 s, puis 60 s. */
+    fun retryDelayMs(attempt: Int): Long = when (attempt) {
+        0 -> 10_000L
+        1 -> 30_000L
+        else -> 60_000L
+    }
+
     /** Fuseau trouvé dans la réponse d'un des services, sinon null. */
     fun zoneOf(json: String): String? {
         val root = try {

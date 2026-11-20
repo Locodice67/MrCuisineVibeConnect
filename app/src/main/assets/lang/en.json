@@ -152,6 +152,7 @@
   "GitHub limite les vérifications : réessayez dans une heure": "GitHub is limiting checks: try again in an hour",
   "Hacher": "Chop",
   "Heure corrigée : %s (%s)": "Time corrected: %s (%s)",
+  "Horloge pas encore réglée : nouvelle tentative dans quelques secondes.": "Clock not set yet: retrying in a few seconds.",
   "Hôte": "Host",
   "Il est %s (%s)": "It is %s (%s)",
   "Il est %s · fuseau %s (%s)": "It is %s · time zone %s (%s)",

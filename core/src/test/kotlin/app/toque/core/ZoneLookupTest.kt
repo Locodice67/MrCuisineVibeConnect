@@ -2,7 +2,9 @@ package app.toque.core
 
 import app.toque.core.time.ZoneLookup
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ZoneLookupTest {
@@ -22,5 +24,20 @@ class ZoneLookupTest {
         assertNull(ZoneLookup.zoneOf("""{"timezone":"Europe/Paris'; reboot"}"""))
         assertNull(ZoneLookup.zoneOf("pas du json"))
         assertNull(ZoneLookup.zoneOf("""{"timezone":""}"""))
+    }
+
+    @Test
+    fun defersTheLookupUntilTheClockIsPlausible() {
+        assertFalse(ZoneLookup.clockPlausible(0L))
+        assertFalse(ZoneLookup.clockPlausible(1_262_304_000_000L)) // 1er janvier 2010
+        assertFalse(ZoneLookup.clockPlausible(ZoneLookup.PLAUSIBLE_SINCE_MS - 1))
+        assertTrue(ZoneLookup.clockPlausible(ZoneLookup.PLAUSIBLE_SINCE_MS))
+        assertTrue(ZoneLookup.clockPlausible(1_800_000_000_000L))
+    }
+
+    @Test
+    fun retriesTheLookupGently() {
+        assertEquals(listOf(10_000L, 30_000L, 60_000L, 60_000L, 60_000L),
+            (0..4).map { ZoneLookup.retryDelayMs(it) })
     }
 }

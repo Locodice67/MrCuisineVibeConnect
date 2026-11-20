@@ -18,14 +18,23 @@ import java.util.TimeZone
  * Le robot n'a pas de pile d'horloge : au démarrage il se croit le 1er janvier 1970.
  */
 class TimeSync(private val context: Context, private val prefs: Prefs, private val log: Logbook) {
-    class Result(val ok: Boolean, val zone: String, val message: String)
+    class Result(val ok: Boolean, val zone: String, val message: String, val deferred: Boolean = false)
 
     fun run(): Result {
+        // Heure réseau d'Android (NTP), au cas où elle aurait été désactivée.
+        RootShell.run("settings put global auto_time 1")
         val wanted = prefs.timeZone
         var zone: String? = null
         var source = tr("choix manuel")
         var serverMs = 0L
         if (wanted == ZoneLookup.AUTO) {
+            if (!ZoneLookup.clockPlausible(System.currentTimeMillis())) {
+                if (!deferredLogged) {
+                    deferredLogged = true
+                    log.write("heure", "horloge pas encore synchronisée, fuseau reporté")
+                }
+                return Result(false, current(), tr("Horloge pas encore réglée : nouvelle tentative dans quelques secondes."), deferred = true)
+            }
             for (p in ZoneLookup.PROVIDERS) {
                 try {
                     val (body, date) = get(p.url)
@@ -48,8 +57,6 @@ class TimeSync(private val context: Context, private val prefs: Prefs, private v
         val z = zone!!
         if (!RootShell.available()) return Result(false, current(), tr("Accès root nécessaire pour régler l'heure du robot."))
 
-        // Heure réseau d'Android (NTP), au cas où elle aurait été désactivée.
-        RootShell.run("settings put global auto_time 1")
         if (z != current()) {
             val r = RootShell.run("service call alarm 3 s16 $z")
             if (!r.ok || prop() != z) {
@@ -99,6 +106,9 @@ class TimeSync(private val context: Context, private val prefs: Prefs, private v
 
         @Volatile private var started = false
 
+        /** Une seule ligne de journal neutre par processus pendant l'attente de NTP. */
+        @Volatile private var deferredLogged = false
+
         /**
          * Au lancement de l'interface : réglage dès que le réseau répond (le Wi-Fi met un moment à
          * se connecter au démarrage du robot), puis toutes les 12 heures.
@@ -116,7 +126,11 @@ class TimeSync(private val context: Context, private val prefs: Prefs, private v
                         log.write("heure", "erreur : ${e.message}")
                         Result(false, current(), "")
                     }
-                    val wait = if (r.ok) 12 * 3600_000L else retries[minOf(i++, retries.size - 1)]
+                    val wait = when {
+                        r.ok -> 12 * 3600_000L
+                        r.deferred -> ZoneLookup.retryDelayMs(i++)
+                        else -> retries[minOf(i++, retries.size - 1)]
+                    }
                     if (r.ok) i = 0
                     try {
                         Thread.sleep(wait)
