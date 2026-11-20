@@ -114,7 +114,7 @@ class TimeSync(private val context: Context, private val prefs: Prefs, private v
         /** Une seule ligne de journal neutre par processus pendant l'attente de NTP. */
         private val deferredLogged = AtomicBoolean(false)
 
-        /** Report de l'attente NTP avant de passer aux délais longs (~3 min au total). */
+        /** Report de l'attente NTP avant de passer aux délais longs (≈ 3,5–4 min au total). */
         private const val FAST_DEFERRALS = 5
 
         /**
@@ -143,6 +143,7 @@ class TimeSync(private val context: Context, private val prefs: Prefs, private v
                         r.ok -> 12 * 3600_000L
                         r.deferred && fast < FAST_DEFERRALS -> ZoneLookup.retryDelayMs(fast++)
                         // Attente NTP trop longue : on ralentit (5 min puis plus) au lieu de sonder chaque minute.
+                        // `failures` est réutilisé exprès : le report fait avancer l'échelle des échecs réels.
                         r.deferred -> retries[minOf(FAST_DEFERRALS - 1 + failures++, retries.size - 1)]
                         else -> retries[minOf(failures++, retries.size - 1)]
                     }

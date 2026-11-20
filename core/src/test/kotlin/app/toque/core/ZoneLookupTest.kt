@@ -47,6 +47,7 @@ class ZoneLookupTest {
         assertFalse(ZoneLookup.usable("https://ipwho.is/?fields=success,timezone", now))
         assertFalse(ZoneLookup.usable("https://ipapi.co/json/", now))
         assertTrue(ZoneLookup.usable("http://ip-api.com/json/?fields=status,timezone", now))
+        assertTrue(ZoneLookup.PROVIDERS.any { !it.url.startsWith("https:") })
     }
 
     @Test
