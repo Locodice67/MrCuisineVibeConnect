@@ -43,6 +43,13 @@ object ZoneLookup {
 
     fun clockPlausible(nowMs: Long): Boolean = nowMs >= PLAUSIBLE_SINCE_MS
 
+    /**
+     * Une horloge fausse fait échouer la validation TLS : les services HTTPS sont alors inutiles,
+     * mais celui en HTTP simple reste utilisable (et son en-tête Date remet l'heure d'aplomb).
+     */
+    fun usable(url: String, nowMs: Long): Boolean =
+        clockPlausible(nowMs) || !url.startsWith("https:", ignoreCase = true)
+
     /** Délai avant de retenter la recherche du fuseau : 10 s, 30 s, puis 60 s. */
     fun retryDelayMs(attempt: Int): Long = when (attempt) {
         0 -> 10_000L
